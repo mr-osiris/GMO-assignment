@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# React GrowMeOrganic Assignment - PrimeReact DataTable with Persistent Cross-Page Selection
+__Project Overview:__
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is basically a React app made with Vite and TypeScript, which shows artwork data from the Art Institute of Chicago using a PrimeReact DataTable. The main challenge was to make a paginated table where people can select rows across pages and keep their selection even when they move through different pages.
 
-Currently, two official plugins are available:
+__How I Approached It:__
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+    At first, I looked at the requirements and realized I needed to do server-side pagination, so the app only fetches data for one page at a time to avoid slowing down the app or using too much memory.
+    
+    I also needed to keep track of which rows were selected across many pages, so I created a Map to hold the selected items globally. That way, even if you switch pages, it remembers what you selected before.
+    
+    For the UI, I wanted it to be simple but functional. I used a dropdown input in the table header to allow selecting multiple rows by number, which felt easier for users. The count of selected items shows clearly, and users can remove selections from a panel below the table.
 
-## React Compiler
+__What I Learned and Used:__
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+    I mostly figured out the logic myself but checked PrimeReact website and some examples online when I got stuck.
+    
+    State management with React hooks (useState, useEffect) was important because I had to keep the local page data and global selections in sync.
+    
+    Handling async data fetching with Axios was straightforward but needed care with loading states and errors.
+    
+    Pagination with PrimeReact Datatable was a bit tricky because the API returns next and previous URLs, so I had to handle that properly.
 
-## Expanding the ESLint configuration
+__Logic Summary:__
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+    On page load or change, fetch only the current page data.
+    
+    Keep a map of selected rows from any pages.
+    
+    Update page selection UI to show which rows from the current page are selected.
+    
+    Changing the selection updates that global map and the UI panel.
+    
+    Removing from the panel unselects globally and locally.
+    
+    Input in the header lets users quickly select many rows across pages.
+    
+    Selection count and loading states keep user informed.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+__Netlify Deployed Link:__ 
+https://gmoartwork.netlify.app/

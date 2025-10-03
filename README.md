@@ -1,4 +1,4 @@
-# React GrowMeOrganic Assignment - PrimeReact DataTable with Persistent Cross-Page Selection
+# GrowMeOrganic Assignment - PrimeReact DataTable with Persistent Cross-Page Selection
 __Project Overview:__
 
 This project is basically a React app made with Vite and TypeScript, which shows artwork data from the Art Institute of Chicago using a PrimeReact DataTable. The main challenge was to make a paginated table where people can select rows across pages and keep their selection even when they move through different pages.

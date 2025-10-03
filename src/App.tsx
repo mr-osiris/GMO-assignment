@@ -51,6 +51,44 @@ function App() {
       });
   };
 
+  const fetchMultiplePages = async (startPage: number, totalCount: number) => {
+    const updatedMap = new Map(allSelectedArtworks);
+    let remainingCount = totalCount;
+    let page = startPage;
+    
+    // Clear selections from current page first
+    artworks.forEach(art => updatedMap.delete(art.id));
+    
+    while (remainingCount > 0) {
+      try {
+        const response = await axios.get(API_URL, { 
+          params: { page, limit: PAGE_SIZE } 
+        });
+        const pageArtworks = response.data.data as Artwork[];
+        const countToSelect = Math.min(remainingCount, pageArtworks.length);
+        
+        // Add selected items from this page
+        for (let i = 0; i < countToSelect; i++) {
+          updatedMap.set(pageArtworks[i].id, pageArtworks[i]);
+        }
+        
+        remainingCount -= countToSelect;
+        page++;
+      } catch (error) {
+        console.error("Error fetching page:", error);
+        break;
+      }
+    }
+    
+    setAllSelectedArtworks(updatedMap);
+    
+    // Update current page selection
+    const selectedOnCurrentPage = artworks.filter(art => 
+      updatedMap.has(art.id)
+    );
+    setCurrentPageSelection(selectedOnCurrentPage);
+  };
+
   useEffect(() => {
     fetchData(1);
   }, []);
@@ -92,24 +130,12 @@ function App() {
 
   const columnHeaderTemplate = () => (
     <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
-      <input
-        type="checkbox"
-        checked={currentPageSelection.length === artworks.length && artworks.length > 0}
-        onChange={(e) => {
-          if (e.target.checked) {
-            setCurrentPageSelection(artworks);
-            const updatedMap = new Map(allSelectedArtworks);
-            artworks.forEach(art => updatedMap.set(art.id, art));
-            setAllSelectedArtworks(updatedMap);
-          } else {
-            setCurrentPageSelection([]);
-            const updatedMap = new Map(allSelectedArtworks);
-            artworks.forEach(art => updatedMap.delete(art.id));
-            setAllSelectedArtworks(updatedMap);
-          }
-        }}
-        style={{ marginRight: "8px", cursor: "pointer", width: "18px", height: "18px" }}
-      />
+      {/* Empty div for selection column */}
+    </div>
+  );
+
+  const titleHeaderTemplate = () => (
+    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
       <span
         style={{
           cursor: "pointer",
@@ -117,6 +143,7 @@ function App() {
           borderRadius: "4px",
           background: dropdownOpen ? "#e3f2fd" : "transparent",
           transition: "background 0.2s",
+          marginRight: "8px",
         }}
         onClick={() => setDropdownOpen((o) => !o)}
       >
@@ -128,6 +155,7 @@ function App() {
           }}
         />
       </span>
+      <span>Title</span>
       {dropdownOpen && (
         <div
           style={{
@@ -145,12 +173,12 @@ function App() {
         >
           <div style={{ marginBottom: "1em" }}>
             <label style={{ display: "block", marginBottom: "0.5em", fontSize: "0.9em", color: "#666" }}>
-              Select rows...
+              Select rows (across pages)...
             </label>
             <input
               type="number"
               min={0}
-              max={artworks.length}
+              max={120}
               value={selectCountInput}
               style={{
                 width: "100%",
@@ -162,16 +190,18 @@ function App() {
               }}
               placeholder="Enter number of rows"
               onChange={(e) => {
-                const val = Math.max(0, Math.min(Number(e.target.value), artworks.length));
+                const val = Math.max(0, Math.min(Number(e.target.value), artworks.length * 10));
                 setSelectCountInput(e.target.value);
-                const newSelection = artworks.slice(0, val);
-                setCurrentPageSelection(newSelection);
                 
-                // Update global map
-                const updatedMap = new Map(allSelectedArtworks);
-                artworks.forEach(art => updatedMap.delete(art.id));
-                newSelection.forEach(art => updatedMap.set(art.id, art));
-                setAllSelectedArtworks(updatedMap);
+                if (val > 0) {
+                  fetchMultiplePages(currentPage, val);
+                } else {
+                  // Clear all selections
+                  const updatedMap = new Map(allSelectedArtworks);
+                  artworks.forEach(art => updatedMap.delete(art.id));
+                  setAllSelectedArtworks(updatedMap);
+                  setCurrentPageSelection([]);
+                }
               }}
               onClick={(e) => e.stopPropagation()}
             />
@@ -223,8 +253,8 @@ function App() {
         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
         currentPageReportTemplate={`Page {currentPage} of {totalPages}`}
       >
-        <Column selectionMode="multiple" header={columnHeaderTemplate} headerStyle={{ width: "7em" }} />
-        <Column field="title" header="Title" />
+        <Column selectionMode="multiple" headerStyle={{ width: "3em" }} header={columnHeaderTemplate} />
+        <Column field="title" header={titleHeaderTemplate} />
         <Column field="place_of_origin" header="Place of Origin" />
         <Column field="artist_display" header="Artist" />
         <Column field="inscriptions" header="Inscriptions" />

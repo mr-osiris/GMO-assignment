@@ -7,6 +7,7 @@ import "primeicons/primeicons.css";
 const PAGE_SIZE = 12;
 const API_URL = "https://api.artic.edu/api/v1/artworks";
 
+// artwork display elements
 interface Artwork {
   id: number;
   title: string;
@@ -18,16 +19,20 @@ interface Artwork {
 }
 
 function App() {
+  // states
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(false);
   const [first, setFirst] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // store selected rows across pages
   const [allSelectedArtworks, setAllSelectedArtworks] = useState<Map<number, Artwork>>(new Map());
   const [currentPageSelection, setCurrentPageSelection] = useState<Artwork[]>([]);
   const [selectCountInput, setSelectCountInput] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // fetch data for pages
   const fetchData = (pageNumber: number) => {
     setLoading(true);
     axios
@@ -37,7 +42,7 @@ function App() {
         setArtworks(fetchedArtworks);
         setTotalRecords(response.data.pagination.total);
         
-        // Update current page selection based on global selection
+        // sync's selected row if already choosen earlier
         const selectedOnCurrentPage = fetchedArtworks.filter(art => 
           allSelectedArtworks.has(art.id)
         );
@@ -51,12 +56,13 @@ function App() {
       });
   };
 
+  // persistent row slected according to input number 
   const fetchMultiplePages = async (startPage: number, totalCount: number) => {
     const updatedMap = new Map(allSelectedArtworks);
     let remainingCount = totalCount;
     let page = startPage;
     
-    // Clear selections from current page first
+    // clear current page selections if updatinng count on that page
     artworks.forEach(art => updatedMap.delete(art.id));
     
     while (remainingCount > 0) {
@@ -67,7 +73,6 @@ function App() {
         const pageArtworks = response.data.data as Artwork[];
         const countToSelect = Math.min(remainingCount, pageArtworks.length);
         
-        // Add selected items from this page
         for (let i = 0; i < countToSelect; i++) {
           updatedMap.set(pageArtworks[i].id, pageArtworks[i]);
         }
@@ -82,45 +87,47 @@ function App() {
     
     setAllSelectedArtworks(updatedMap);
     
-    // Update current page selection
+    // update current page selection
     const selectedOnCurrentPage = artworks.filter(art => 
       updatedMap.has(art.id)
     );
     setCurrentPageSelection(selectedOnCurrentPage);
   };
 
+  // initially load page no.1
   useEffect(() => {
     fetchData(1);
   }, []);
 
+  // when rows are selected/deselected manually 
   const handleSelectionChange = (e: { value: Artwork[] }) => {
     const newSelection = e.value ?? [];
     setCurrentPageSelection(newSelection);
     
-    // Update global selection map
     const updatedMap = new Map(allSelectedArtworks);
-    
-    // Remove all items from current page
+
+    // clears old selection on current page
     artworks.forEach(art => updatedMap.delete(art.id));
     
-    // Add newly selected items from current page
+    // add new selction
     newSelection.forEach(art => updatedMap.set(art.id, art));
     
     setAllSelectedArtworks(updatedMap);
     setSelectCountInput(`${newSelection.length}`);
   };
 
+  // remove's item from selction
   const handleRemove = (id: number) => {
     const updatedMap = new Map(allSelectedArtworks);
     updatedMap.delete(id);
     setAllSelectedArtworks(updatedMap);
     
-    // Update current page selection if the item is on current page
     const filtered = currentPageSelection.filter((a) => a.id !== id);
     setCurrentPageSelection(filtered);
     setSelectCountInput(`${filtered.length}`);
   };
 
+  // pagination change
   const onPageChange = (event: any) => {
     setFirst(event.first);
     const pageNumber = (event.first / PAGE_SIZE) + 1;
@@ -128,12 +135,12 @@ function App() {
     fetchData(pageNumber);
   };
 
+  // empty column header for checkbox column
   const columnHeaderTemplate = () => (
-    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
-      {/* Empty div for selection column */}
-    </div>
+    <div style={{ display: "flex", alignItems: "center", position: "relative" }}></div>
   );
 
+  // dropdown in header for input(shevron work)
   const titleHeaderTemplate = () => (
     <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
       <span
@@ -196,7 +203,7 @@ function App() {
                 if (val > 0) {
                   fetchMultiplePages(currentPage, val);
                 } else {
-                  // Clear all selections
+                  // if input is cleared or 0, clear all selection
                   const updatedMap = new Map(allSelectedArtworks);
                   artworks.forEach(art => updatedMap.delete(art.id));
                   setAllSelectedArtworks(updatedMap);
@@ -263,7 +270,7 @@ function App() {
       </DataTable>
       <SelectionPanel selectedArtworks={Array.from(allSelectedArtworks.values())} onRemoveId={handleRemove} />
       
-      {/* Custom CSS to highlight current page */}
+      {/* custom css for paginator active page */}
       <style>{`
         .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
           background: #1976d2 !important;
@@ -287,6 +294,7 @@ function App() {
   );
 }
 
+// panel to show selected rows on all pages
 interface SelectionPanelProps {
   selectedArtworks: Artwork[];
   onRemoveId: (id: number) => void;
